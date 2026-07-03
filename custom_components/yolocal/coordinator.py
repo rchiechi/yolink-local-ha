@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -19,12 +18,32 @@ from .api import (
     YoLinkClient,
     YoLinkMQTTClient,
 )
-from .api.auth import AuthenticationError
 
 _LOGGER = logging.getLogger(__name__)
 
 # Polling interval as fallback when MQTT events are missed
 UPDATE_INTERVAL = timedelta(minutes=5)
+
+
+def _merge_device_state(
+    existing: dict[str, Any], incoming: dict[str, Any]
+) -> dict[str, Any]:
+    """Merge an MQTT event payload into the cached device state.
+
+    Keys merge shallowly with incoming values winning. Special case: when the
+    cached ``state`` is a nested dict but the event carries a flat scalar
+    ``state`` (e.g. ``MotionSensor.Alert`` sends ``{"state": "alert"}`` while
+    ``getState`` reports ``{"state": {"state": ..., "battery": ...}}``), fold
+    the scalar into the existing dict so sibling fields such as ``battery`` and
+    ``devTemperature`` are preserved instead of clobbered.
+    """
+    if isinstance(existing.get("state"), dict) and isinstance(incoming.get("state"), str):
+        return {
+            **existing,
+            **incoming,
+            "state": {**existing["state"], "state": incoming["state"]},
+        }
+    return {**existing, **incoming}
 
 
 class YoLocalCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
@@ -133,7 +152,7 @@ class YoLocalCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
             return
 
         existing = self._states.get(device_id, {})
-        self._states[device_id] = {**existing, **event.data}
+        self._states[device_id] = _merge_device_state(existing, event.data)
         self.async_set_updated_data(self._states.copy())
 
     def get_state(self, device_id: str) -> dict[str, Any]:
