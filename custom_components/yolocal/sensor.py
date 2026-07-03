@@ -17,6 +17,10 @@ from .coordinator import YoLocalCoordinator
 from .entity import YoLocalEntity
 
 
+# Device types that report a battery level (0-4) we expose as a sensor.
+BATTERY_DEVICE_TYPES: set[str] = {"THSensor", "MotionSensor", "DoorSensor", "LeakSensor"}
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -30,6 +34,7 @@ async def async_setup_entry(
         if device.device_type == "THSensor":
             entities.append(YoLocalTemperatureSensor(coordinator, device))
             entities.append(YoLocalHumiditySensor(coordinator, device))
+        if device.device_type in BATTERY_DEVICE_TYPES:
             entities.append(YoLocalBatterySensor(coordinator, device))
 
     async_add_entities(entities)
@@ -103,6 +108,11 @@ class YoLocalBatterySensor(YoLocalEntity, SensorEntity):
 
         if level is None:
             return None
-        # YoLink reports 0-4, convert to percentage
+        try:
+            # YoLink reports battery as 0-4. The API docs type it as a string
+            # for some devices, so coerce defensively before doing math.
+            level = int(level)
+        except (TypeError, ValueError):
+            return None
         return min(level * 25, 100)
 
