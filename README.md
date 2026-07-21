@@ -37,7 +37,7 @@ The YoLink Local Hub supports both Matter and a native Local API. While Matter w
 | MotionSensor | Binary Sensor, Sensor | Motion detection, battery |
 | Outlet | Switch | On/off control |
 | MultiOutlet | Switch | Per-socket on/off control |
-| Lock | Lock | Lock/unlock control |
+| Lock / LockV2 | Lock, Sensor | Lock/unlock control, battery |
 | Siren | Siren | Trigger/stop alarm |
 
 Additional device types can be added — contributions welcome!

@@ -18,7 +18,13 @@ from .entity import YoLocalEntity
 
 
 # Device types that report a battery level (0-4) we expose as a sensor.
-BATTERY_DEVICE_TYPES: set[str] = {"THSensor", "MotionSensor", "DoorSensor", "LeakSensor"}
+BATTERY_DEVICE_TYPES: set[str] = {
+    "THSensor",
+    "MotionSensor",
+    "DoorSensor",
+    "LeakSensor",
+    "LockV2",
+}
 
 
 async def async_setup_entry(
@@ -104,6 +110,10 @@ class YoLocalBatterySensor(YoLocalEntity, SensorEntity):
         if isinstance(state, dict):
             level = state.get("battery")
         else:
+            level = None
+        if level is None:
+            # Some devices (e.g. LockV2) report battery at the top level rather
+            # than inside the nested state dict.
             level = self.device_state.get("battery")
 
         if level is None:
