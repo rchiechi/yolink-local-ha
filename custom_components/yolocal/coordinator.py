@@ -146,15 +146,6 @@ class YoLocalCoordinator(DataUpdateCoordinator[dict[str, dict[str, Any]]]):
         """Return whether a device is considered online."""
         return self._online.get(device_id, True)
 
-    async def async_get_hub_devices(self) -> list[Device]:
-        """Fetch the current device list live from the hub.
-
-        Unlike ``devices``, which is the snapshot taken at setup, this
-        queries the hub so callers get the current local-network
-        enumeration. Raises if the hub is unreachable.
-        """
-        return await self._client.get_devices()
-
     async def _async_update_data(self) -> dict[str, dict[str, Any]]:
         """Poll device states via HTTP as a fallback.
 
